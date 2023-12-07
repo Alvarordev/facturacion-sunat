@@ -28,84 +28,111 @@ class SunatService
         return $see;
     }
 
-    public function getInvoice()
+    public function getInvoice($data)
     {
         return (new Invoice())
-            ->setUblVersion('2.1')
-            ->setTipoOperacion('0101') // Venta - Catalog. 51
-            ->setTipoDoc('01') // Factura - Catalog. 01 
-            ->setSerie('F001')
-            ->setCorrelativo('1')
-            ->setFechaEmision(new DateTime('2020-08-24 13:05:00-05:00')) // Zona horaria: Lima
+            ->setUblVersion($data['ublVersion'] ?? '2.1')
+            ->setTipoOperacion($data['tipoOperacion'] ?? null) // Venta - Catalog. 51
+            ->setTipoDoc($data['tipoDoc'] ?? null) // Factura - Catalog. 01 
+            ->setSerie($data['serie'] ?? null)
+            ->setCorrelativo($data['correlativo'] ?? null)
+            ->setFechaEmision(new DateTime($data['fechaEmision'] ?? null)) // Zona horaria: Lima
             ->setFormaPago(new FormaPagoContado()) // FormaPago: Contado
-            ->setTipoMoneda('PEN') // Sol - Catalog. 02
-            ->setCompany($this->getCompany())
-            ->setClient($this->getClient())
-            ->setMtoOperGravadas(100.00)
-            ->setMtoIGV(18.00)
-            ->setTotalImpuestos(18.00)
-            ->setValorVenta(100.00)
-            ->setSubTotal(118.00)
-            ->setMtoImpVenta(118.00)
-            ->setDetails($this->getDetails())
-            ->setLegends($this->getLegends());
+            ->setTipoMoneda($data['tipoMoneda'] ?? null) // Sol - Catalog. 02
+            ->setCompany($this->getCompany($data['company']))
+            ->setClient($this->getClient($data['client']))
+
+            //Mto Operaciones
+            ->setMtoOperGravadas($data['mtoOperGravadas'] ?? null)
+            ->setMtoOperExoneradas($data['mtoOperExoneradas'] ?? null)
+            ->setMtoOperInafectas($data['mtoOperInafectas'] ?? null)
+            ->setMtoOperExportacion($data['mtoOperExportacion'] ?? null)
+            ->setMtoOperGratuitas($data['mtoOperGratuitas'] ?? null)
+
+            //Impuestos
+            ->setMtoIGV($data['mtoIGV'])
+            ->setMtoIGVGratuitas($data['mtoIGVGratuitas'])
+            ->setIcbper($data['icbper'])
+            ->setTotalImpuestos($data['totalImpuestos'])
+
+            //Totales
+            ->setValorVenta($data['valorVenta'])
+            ->setSubTotal($data['subTotal'])
+            ->setRedondeo($data['redondeo'])
+            ->setMtoImpVenta($data['mtoImpVenta'])
+
+            //Productos
+            ->setDetails($this->getDetails($data['details']))
+
+            //Leyendas
+            ->setLegends($this->getLegends($data['legends']));
     }
 
-    public function getCompany()
+    public function getCompany($company)
     {
         return (new Company())
-            ->setRuc('20123456789')
-            ->setRazonSocial('GREEN SAC')
-            ->setNombreComercial('GREEN')
-            ->setAddress($this->getAddress());
+            ->setRuc($company['ruc'] ?? null)
+            ->setRazonSocial($company['razonSocial'] ?? null)
+            ->setNombreComercial($company['nombreComercial'] ?? null)
+            ->setAddress($this->getAddress($company['address']) ?? null);
     }
 
-    public function getAddress()
+    public function getAddress($address)
     {
         return (new Address())
-            ->setUbigueo('150101')
-            ->setDepartamento('LIMA')
-            ->setProvincia('LIMA')
-            ->setDistrito('LIMA')
-            ->setUrbanizacion('-')
-            ->setDireccion('Av. Villa Nueva 221')
-            ->setCodLocal('0000'); // Codigo de establecimiento asignado por SUNAT, 0000 por defecto.
+            ->setUbigueo($address['ubigueo'] ?? null)
+            ->setDepartamento($address['departamento'] ?? null)
+            ->setProvincia($address['provincia'] ?? null)
+            ->setDistrito($address['distrito'] ?? null)
+            ->setUrbanizacion($address['urbanizacion'] ?? null)
+            ->setDireccion($address['direccion'] ?? null)
+            ->setCodLocal($address['codLocal'] ?? null); // Codigo de establecimiento asignado por SUNAT, 0000 por defecto.
+
     }
 
-    public function getClient()
+    public function getClient($client)
     {
         return (new Client())
-            ->setTipoDoc('6')
-            ->setNumDoc('20000000001')
-            ->setRznSocial('EMPRESA X');
+            ->setTipoDoc($client['tipoDoc'] ?? null) // DNI - Catalog. 06
+            ->setNumDoc($client['numDoc'] ?? null)
+            ->setRznSocial($client['rznSocial'] ?? null);
     }
 
-    public function getDetails()
+    public function getDetails($details)
     {
-        $item = (new SaleDetail())
-            ->setCodProducto('P001')
-            ->setUnidad('NIU') // Unidad - Catalog. 03
-            ->setCantidad(2)
-            ->setMtoValorUnitario(50.00)
-            ->setDescripcion('PRODUCTO 1')
-            ->setMtoBaseIgv(100)
-            ->setPorcentajeIgv(18.00) // 18%
-            ->setIgv(18.00)
-            ->setTipAfeIgv('10') // Gravado Op. Onerosa - Catalog. 07
-            ->setTotalImpuestos(18.00) // Suma de impuestos en el detalle
-            ->setMtoValorVenta(100.00)
-            ->setMtoPrecioUnitario(59.00);
+        $green_details = [];
 
-        return [$item];
+        foreach ($details as $detail) {        
+            $green_details[] = (new SaleDetail())
+                ->setCodProducto($detail['codProducto'] ?? null)
+                ->setUnidad($detail['unidad'] ?? null) // Unidad - Catalog. 03
+                ->setCantidad($detail['cantidad'] ?? null)
+                ->setMtoValorUnitario($detail['mtoValorUnitario'] ?? null)
+                ->setDescripcion($detail['descripcion'] ?? null)
+                ->setMtoBaseIgv($detail['mtoBaseIgv'] ?? null)
+                ->setPorcentajeIgv($detail['porcentajeIgv'] ?? null) // 18%
+                ->setIgv($detail['igv'] ?? null)
+                ->setFactorIcbper($detail['factorIcbper'] ?? null) // 0.3%
+                ->setIcbper($detail['icbper'] ?? null)
+                ->setTipAfeIgv($detail['tipAfeIgv'] ?? null) // Gravado Op. Onerosa - Catalog. 07
+                ->setTotalImpuestos($detail['totalImpuestos'] ?? null) // Suma de impuestos en el detalle
+                ->setMtoValorVenta($detail['mtoValorVenta'] ?? null)
+                ->setMtoPrecioUnitario($detail['mtoPrecioUnitario'] ?? null);
+        }
+        return $green_details;
     }
 
-    public function getLegends()
+    public function getLegends($legends)
     {
-        $legend = (new Legend())
-            ->setCode('1000') // Monto en letras - Catalog. 52
-            ->setValue('SON DOSCIENTOS TREINTA Y SEIS CON 00/100 SOLES');
+        $green_legends = [];
 
-        return [$legend];
+        foreach ($legends as $legend) {
+            $green_legends[] = (new Legend())
+                ->setCode($legend['code'] ?? null) // Monto en letras - Catalog. 52
+                ->setValue($legend['value'] ?? null);
+        }
+
+        return $green_legends;
     }
 
     public function sunatResponse($result)
