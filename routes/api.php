@@ -20,3 +20,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('invoices/send', [InvoiceController::class, 'send']);
+Route::post('invoices/xml', [InvoiceController::class, 'xml']);

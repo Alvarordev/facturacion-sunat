@@ -12,7 +12,14 @@ class InvoiceController extends Controller
 {
     public function send(Request $request)
     {
-       
+        $request->validate([
+            'company'=> 'required|array',
+            'company.address'=> 'required|array',
+            'client'=> 'required|array',
+            'details'=> 'required|array',
+            'details.*'=> 'required|array',
+        ]);
+
         $data = $request->all();
 
         $this->setTotales($data);
@@ -20,7 +27,7 @@ class InvoiceController extends Controller
 
         $sunat = new SunatService();
 
-        $see = $sunat -> getsee();
+        $see = $sunat->getsee();
         $invoice = $sunat->getInvoice($data);
         $result = $see->send($invoice);
 
@@ -31,7 +38,33 @@ class InvoiceController extends Controller
         return response()->json($response, 200);
     }
 
-    public function setTotales(&$data){
+    public function xml(Request $request)
+    {   
+        $request->validate([
+            'company'=> 'required|array',
+            'company.address'=> 'required|array',
+            'client'=> 'required|array',
+            'details'=> 'required|array',
+            'details.*'=> 'required|array',
+        ]);
+
+        $data = $request->all();
+
+        $this->setTotales($data);
+        $this->setLegends($data);
+
+        $sunat = new SunatService();
+        $see = $sunat->getsee();
+        $invoice = $sunat->getInvoice($data);
+
+        $response['xml'] = $see->getXmlSigned($invoice);
+        $response['hash'] = (new XmlUtils)->getHashSign($response['xml']);
+
+        return response()->json($response, 200);
+    }
+
+    public function setTotales(&$data)
+    {
         $details = collect($data['details']);
 
         $data['mtoOperGravadas'] = $details->where('tipAfeIgv', 10)->sum('mtoValorVenta');
@@ -53,7 +86,8 @@ class InvoiceController extends Controller
         $data['redondeo'] = $data['mtoImpVenta'] - $data['subTotal'];
     }
 
-    public function setLegends(&$data){
+    public function setLegends(&$data)
+    {
         $formatter = new NumeroALetras();
 
         $data['legends'] = [
