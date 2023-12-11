@@ -10,6 +10,8 @@ use Greenter\Model\Sale\FormaPagos\FormaPagoContado;
 use Greenter\Model\Sale\Invoice;
 use Greenter\Model\Sale\Legend;
 use Greenter\Model\Sale\SaleDetail;
+use Greenter\Report\HtmlReport;
+use Greenter\Report\Resolver\DefaultTemplateResolver;
 use Greenter\See;
 use Greenter\Ws\Services\SunatEndpoints;
 use Illuminate\Support\Facades\File;
@@ -161,5 +163,30 @@ class SunatService
 
         return $sunatResponse;
 
+    }
+
+    public function getHtmlReport($invoice){
+        $report = new HtmlReport();
+
+        $resolver = new DefaultTemplateResolver();
+        $report->setTemplate($resolver->getTemplate($invoice));
+
+        $params = [
+            'system' => [
+                'logo' => File::get(public_path('logo.png')), // Logo de Empresa
+                'hash' => 'qqnr2dN4p/HmaEA/CJuVGo7dv5g=', // Valor Resumen 
+            ],
+            'user' => [
+                'header'     => 'Telf: <b> 902203077</b>', // Texto que se ubica debajo de la dirección de empresa
+                'extras'     => [
+                    // Leyendas adicionales
+                    ['name' => 'CONDICION DE PAGO', 'value' => 'Efectivo'     ],
+                    ['name' => 'VENDEDOR'         , 'value' => 'ALONSO'],
+                ],
+                'footer' => '<p>Nro Resolucion: <b>3232323</b></p>'
+            ]
+        ];
+
+        return $report->render($invoice, $params);
     }
 }

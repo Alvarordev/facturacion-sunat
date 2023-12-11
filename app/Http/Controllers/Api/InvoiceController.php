@@ -63,6 +63,30 @@ class InvoiceController extends Controller
         return response()->json($response, 200);
     }
 
+    public function pdf(Request $request){
+        $request->validate([
+            'company' => 'required|array',
+            'company.address' => 'required|array',
+            'client' => 'required|array',
+            'details' => 'required|array',
+            'details.*' => 'required|array',
+        ]);
+
+        $data = $request->all();
+
+
+        $this->setTotales($data);
+        $this->setLegends($data);
+
+        $sunat = new SunatService();
+        $see = $sunat->getSee();
+        $invoice = $sunat->getInvoice($data);
+
+        $pdf = $sunat->getHtmlReport($invoice);
+
+        return $pdf;
+    }
+
     public function setTotales(&$data)
     {
         $details = collect($data['details']);
